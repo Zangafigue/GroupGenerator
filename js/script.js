@@ -539,6 +539,15 @@ function getInitials(name) {
         .toUpperCase();
 }
 
+function hexToRgb(hex) {
+    if (!hex || hex === 'transparent') return [100, 100, 110]; // Neutral gray
+    // Simple hex to rgb
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+}
+
 // --- Copy to clipboard -------------------------------------
 copyBtn.addEventListener('click', () => {
     if (!lastGroups.length) return;
@@ -600,10 +609,11 @@ downloadBtn.addEventListener('click', () => {
     doc.setFontSize(9);
     doc.text(`${lastGroups.length} groups • ${totalPeople} participants`, 14, 32);
 
-    // Groups layout
-    const colCount = 2;
-    const cardW = 86;
-    const marginLeft = 14;
+    // Groups layout settings based on View Mode
+    const isList = viewMode === 'list';
+    const colCount = isList ? 1 : 2;
+    const cardW = isList ? 170 : 86;
+    const marginLeft = isList ? (210 - cardW) / 2 : 14;
     const startY = 45;
     const colGap = 10;
 
@@ -611,45 +621,68 @@ downloadBtn.addEventListener('click', () => {
     let yPos = startY;
 
     lastGroups.forEach((group, idx) => {
-        const color = palette[idx % palette.length];
-        const leader = groupLeaders[idx] || null;
+        // Color selection based on Color Mode
+        let color;
+        if (colorMode === 'sober') {
+            color = hexToRgb(unifiedColor);
+        } else {
+            color = palette[idx % palette.length];
+        }
+
+        const isTransparent = colorMode === 'sober' && unifiedColor === 'transparent';
         const x = marginLeft + col * (cardW + colGap);
+
+        // Card height calculation
+        const cardH = 6 + group.length * 7 + 4;
+
+        // New page if needed BEFORE drawing the card
+        if (yPos + cardH > 275) {
+            doc.addPage();
+            doc.setFillColor(240, 244, 255);
+            doc.rect(0, 0, 210, 297, 'F');
+            yPos = 14;
+            col = 0;
+        }
+
+        const currentX = marginLeft + col * (cardW + colGap);
 
         // Card background
         doc.setFillColor(255, 255, 255);
-        doc.roundedRect(x, yPos, cardW, 6 + group.length * 7 + 4, 3, 3, 'F');
+        doc.roundedRect(currentX, yPos, cardW, cardH, 3, 3, 'F');
 
-        // Color side bar
-        doc.setFillColor(...color);
-        doc.roundedRect(x, yPos, 3, 6 + group.length * 7 + 4, 2, 2, 'F');
+        // Side color bar
+        if (!isTransparent) {
+            doc.setFillColor(...color);
+            doc.roundedRect(currentX, yPos, 3, cardH, 2, 2, 'F');
+        }
 
         // Group title
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(isList ? 11 : 9);
         doc.setTextColor(...color);
-        doc.text(`Group ${idx + 1}`, x + 7, yPos + 5.5);
+        doc.text(`Group ${idx + 1}`, currentX + 7, yPos + (isList ? 6.5 : 5.5));
 
         // Members badge
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
+        doc.setFontSize(isList ? 8 : 7);
         doc.setTextColor(120, 120, 140);
-        doc.text(`${group.length} members`, x + cardW - 5, yPos + 5.5, { align: 'right' });
+        doc.text(`${group.length} members`, currentX + cardW - 5, yPos + (isList ? 6.5 : 5.5), { align: 'right' });
 
         // Member list
         group.forEach((name, ni) => {
-            const isLeader = name === leader;
-            const yMember = yPos + 12.5 + ni * 7;
+            const isLeader = name === (groupLeaders[idx] || null);
+            const yMember = yPos + (isList ? 14 : 12.5) + ni * 7;
 
             if (isLeader) {
                 doc.setFont('helvetica', 'bold');
-                doc.setFontSize(8.5);
+                doc.setFontSize(isList ? 9.5 : 8.5);
                 doc.setTextColor(180, 83, 9);  // amber-dark
-                doc.text(`★ ${name}`, x + 7, yMember);
+                doc.text(`★ ${name}`, currentX + 7, yMember);
             } else {
                 doc.setFont('helvetica', 'normal');
-                doc.setFontSize(8.5);
+                doc.setFontSize(isList ? 9.5 : 8.5);
                 doc.setTextColor(40, 40, 60);
-                doc.text(`• ${name}`, x + 7, yMember);
+                doc.text(`• ${name}`, currentX + 7, yMember);
             }
         });
 
@@ -657,16 +690,7 @@ downloadBtn.addEventListener('click', () => {
         col++;
         if (col >= colCount) {
             col = 0;
-            yPos += 6 + group.length * 7 + 10;
-        }
-
-        // New page if needed
-        if (yPos > 260 && idx < lastGroups.length - 1) {
-            doc.addPage();
-            doc.setFillColor(240, 244, 255);
-            doc.rect(0, 0, 210, 297, 'F');
-            yPos = 14;
-            col = 0;
+            yPos += cardH + 10;
         }
     });
 
