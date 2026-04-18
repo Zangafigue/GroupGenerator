@@ -5,6 +5,9 @@ let names = [];          // all loaded names
 let lastGroups = [];     // last generated result
 let groupLeaders = [];   // groupLeaders[i] = leader name for group i (or null)
 let leaderMode = 'none'; // 'none' | 'random' | 'manual'
+let viewMode = 'grid';   // 'grid' | 'list'
+let colorMode = 'colorful'; // 'colorful' | 'sober'
+let unifiedColor = '#6366f1'; // default indigo
 
 // --- DOM elements ------------------------------------------
 const fileInput = document.getElementById('fileInput');
@@ -31,7 +34,11 @@ const downloadBtn = document.getElementById('downloadBtn');
 const downloadExcelBtn = document.getElementById('downloadExcelBtn');
 const copyBtn = document.getElementById('copyBtn');
 const themeToggle = document.getElementById('themeToggle');
-const segmentBtns = document.querySelectorAll('.segment-btn');
+const segmentBtns = document.querySelectorAll('.segment-control:not(.view-toggle):not(.color-toggle) .segment-btn');
+const viewBtns = document.querySelectorAll('.view-toggle .segment-btn');
+const colorBtns = document.querySelectorAll('.color-toggle .segment-btn');
+const soberPalette = document.getElementById('soberPalette');
+const swatches = document.querySelectorAll('.swatch');
 
 // --- Dark / light theme ------------------------------------
 (function initTheme() {
@@ -66,6 +73,67 @@ themeToggle.addEventListener('click', () => {
     document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('gm-theme', next);
     themeToggle.querySelector('.theme-icon').textContent = next === 'dark' ? 'light_mode' : 'dark_mode';
+});
+
+// --- View & Color mode persistence -------------------------
+(function initViewOptions() {
+    viewMode = localStorage.getItem('gm-view') || 'grid';
+    colorMode = localStorage.getItem('gm-color') || 'colorful';
+    unifiedColor = localStorage.getItem('gm-unified-color') || '#6366f1';
+
+    // Update button states
+    viewBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewMode));
+    colorBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.color === colorMode));
+
+    // Update swatch states
+    swatches.forEach(s => s.classList.toggle('active', s.dataset.color === unifiedColor));
+
+    updateViewClasses();
+})();
+
+function updateViewClasses() {
+    if (!groupsDiv) return;
+    groupsDiv.classList.toggle('list-view', viewMode === 'list');
+    groupsDiv.classList.toggle('sober-mode', colorMode === 'sober');
+
+    // Toggle palette visibility
+    if (soberPalette) {
+        soberPalette.style.display = colorMode === 'sober' ? 'flex' : 'none';
+    }
+
+    // Apply unified color to CSS variables
+    document.documentElement.style.setProperty('--unified-color', unifiedColor);
+    document.documentElement.style.setProperty('--sober-display', unifiedColor === 'transparent' ? 'none' : 'block');
+}
+
+viewBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        viewBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        viewMode = btn.dataset.view;
+        localStorage.setItem('gm-view', viewMode);
+        updateViewClasses();
+    });
+});
+
+colorBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        colorBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        colorMode = btn.dataset.color;
+        localStorage.setItem('gm-color', colorMode);
+        updateViewClasses();
+    });
+});
+
+swatches.forEach(swatch => {
+    swatch.addEventListener('click', () => {
+        swatches.forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        unifiedColor = swatch.dataset.color;
+        localStorage.setItem('gm-unified-color', unifiedColor);
+        updateViewClasses();
+    });
 });
 
 // --- Toast notifications -----------------------------------
@@ -366,6 +434,7 @@ function generateGroups() {
 function displayGroups(groups) {
     groupsDiv.innerHTML = '';
     resultsSection.style.display = 'block';
+    updateViewClasses();
 
     groups.forEach((group, i) => {
         const card = document.createElement('div');
