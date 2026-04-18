@@ -1451,3 +1451,68 @@ textarea {
         justify-content: flex-start;
     }
 }
+
+/* ===========================
+   TOGGLE SWITCH (BALANCING)
+   =========================== */
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-slider {
+    width: 42px;
+    height: 22px;
+    background: var(--text-light);
+    border-radius: 999px;
+    position: relative;
+    transition: all var(--transition);
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: all var(--transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background: var(--accent-grad);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.balancing-field {
+    margin-top: 10px;
+    margin-bottom: 22px;
+    padding: 12px 16px;
+    background: rgba(99, 102, 241, 0.04);
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border);
+    width: fit-content;
+}
+
+[data-theme="dark"] .toggle-slider {
+    background: #374151;
+}

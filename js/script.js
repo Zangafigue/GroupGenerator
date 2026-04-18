@@ -39,6 +39,7 @@ const viewBtns = document.querySelectorAll('.view-toggle .segment-btn');
 const colorBtns = document.querySelectorAll('.color-toggle .segment-btn');
 const soberPalette = document.getElementById('soberPalette');
 const swatches = document.querySelectorAll('.swatch');
+const balanceGroupsCb = document.getElementById('balanceGroups');
 
 // --- Dark / light theme ------------------------------------
 (function initTheme() {
@@ -88,8 +89,19 @@ themeToggle.addEventListener('click', () => {
     // Update swatch states
     swatches.forEach(s => s.classList.toggle('active', s.dataset.color === unifiedColor));
 
+    const savedBalance = localStorage.getItem('gm-balance');
+    if (savedBalance !== null && balanceGroupsCb) {
+        balanceGroupsCb.checked = savedBalance === 'true';
+    }
+
     updateViewClasses();
 })();
+
+if (balanceGroupsCb) {
+    balanceGroupsCb.addEventListener('change', () => {
+        localStorage.setItem('gm-balance', balanceGroupsCb.checked);
+    });
+}
 
 function updateViewClasses() {
     if (!groupsDiv) return;
@@ -408,8 +420,24 @@ function generateGroups() {
     }
 
     const groups = [];
-    for (let i = 0; i < shuffled.length; i += groupSize) {
-        groups.push(shuffled.slice(i, i + groupSize));
+    const shouldBalance = balanceGroupsCb ? balanceGroupsCb.checked : false;
+
+    if (shouldBalance && shuffled.length > groupSize) {
+        const numGroups = Math.floor(shuffled.length / groupSize);
+        // Create initial groups
+        for (let i = 0; i < numGroups; i++) {
+            groups.push(shuffled.slice(i * groupSize, (i + 1) * groupSize));
+        }
+        // Distribute remainder into existing groups
+        const remainder = shuffled.slice(numGroups * groupSize);
+        remainder.forEach((name, i) => {
+            groups[i % numGroups].push(name);
+        });
+    } else {
+        // Standard chunking
+        for (let i = 0; i < shuffled.length; i += groupSize) {
+            groups.push(shuffled.slice(i, i + groupSize));
+        }
     }
 
     lastGroups = groups;
