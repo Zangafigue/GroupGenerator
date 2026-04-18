@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroupMaker — Random Group Generator</title>
+    <meta name="description"
+        content="GroupMaker is a lightweight tool to generate random groups from a participant list, with CSV/Excel import and PDF export.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Material+Icons&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon material-icons-round">bolt</span>
+                <span class="logo-text">GroupMaker</span>
+            </div>
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle dark mode">
+                <span class="theme-icon material-icons-round">dark_mode</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Toast notification -->
+        <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+        <!-- Step 1: Import -->
+        <section class="card" id="importSection">
+            <div class="card-header">
+                <span class="step-badge">1</span>
+                <h2>Import participants</h2>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="File drop zone">
+                <div class="drop-zone-inner">
+                    <span class="drop-icon material-icons-round">cloud_upload</span>
+                    <p class="drop-text">Drag a file here</p>
+                    <p class="drop-sub">or</p>
+                    <label class="file-btn" for="fileInput">
+                        Choose a file
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"
+                            aria-label="Select a CSV or Excel file">
+                    </label>
+                    <p class="drop-hint">Accepted formats: CSV, XLSX, XLS</p>
+                    <p class="drop-hint">Expected columns: <strong>last_name</strong> and <strong>first_name</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Manual input -->
+            <div class="manual-section">
+                <div class="divider"><span>or enter manually</span></div>
+                <div class="manual-input-row">
+                    <input type="text" id="manualInput" placeholder="First Last (one per line or comma-separated)"
+                        aria-label="Manual name entry">
+                    <button id="addManualBtn" class="btn btn-secondary" aria-label="Add entered names">Add</button>
+                </div>
+                <textarea id="manualTextarea" rows="3" placeholder="Or paste a list of names here, one per line..."
+                    aria-label="Name list to paste"></textarea>
+                <button id="addTextareaBtn" class="btn btn-ghost btn-sm" aria-label="Import names from text block"><span
+                        class="material-icons-round btn-icon">upload</span> Import text block</button>
+            </div>
+        </section>
+
+        <!-- Step 2: Select members -->
+        <section class="card" id="nameListSection" style="display:none;">
+            <div class="card-header">
+                <span class="step-badge">2</span>
+                <h2>Select members</h2>
+                <span class="badge" id="countBadge">0 selected</span>
+            </div>
+
+            <div class="select-actions">
+                <button id="selectAllBtn" class="btn btn-ghost btn-sm"><span
+                        class="material-icons-round btn-icon">select_all</span> Select all</button>
+                <button id="deselectAllBtn" class="btn btn-ghost btn-sm"><span
+                        class="material-icons-round btn-icon">deselect</span> Deselect all</button>
+                <button id="clearAllBtn" class="btn btn-ghost btn-sm btn-danger"><span
+                        class="material-icons-round btn-icon">delete_sweep</span> Clear list</button>
+                <input type="search" id="searchInput" placeholder="Search..." class="search-field"
+                    aria-label="Search by name">
+            </div>
+
+            <div id="nameList" class="name-list" role="list"></div>
+        </section>
+
+        <!-- Step 3: Configure -->
+        <section class="card" id="configSection" style="display:none;">
+            <div class="card-header">
+                <span class="step-badge">3</span>
+                <h2>Configure and generate</h2>
+            </div>
+
+            <div class="config-row">
+                <div class="config-field">
+                    <label for="groupSize">Members per group</label>
+                    <input type="number" id="groupSize" min="1" max="100" value="3" placeholder="e.g. 3"
+                        aria-label="Number of members per group">
+                </div>
+                <div class="config-field">
+                    <label for="groupTitle">Document title</label>
+                    <input type="text" id="groupTitle" placeholder="e.g. Work groups" value="Generated groups"
+                        aria-label="Title for the document">
+                </div>
+            </div>
+
+            <!-- Leader mode selector -->
+            <div class="config-field leader-mode-field">
+                <label>Group leader assignment</label>
+                <div class="segment-control" role="group" aria-label="Leader assignment mode">
+                    <button class="segment-btn active" data-mode="none" id="leaderModeNone">
+                        <span class="material-icons-round">remove_circle_outline</span> None
+                    </button>
+                    <button class="segment-btn" data-mode="random" id="leaderModeRandom">
+                        <span class="material-icons-round">casino</span> Random
+                    </button>
+                    <button class="segment-btn" data-mode="manual" id="leaderModeManual">
+                        <span class="material-icons-round">touch_app</span> Manual
+                    </button>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <button id="generateBtn" class="btn btn-primary" aria-label="Generate random groups">
+                    <span class="material-icons-round btn-icon">shuffle</span> Generate groups
+                </button>
+                <button id="regenerateBtn" class="btn btn-secondary" style="display:none;"
+                    aria-label="Regenerate with a new random order">
+                    <span class="material-icons-round btn-icon">refresh</span> Regenerate
+                </button>
+            </div>
+        </section>
+
+        <!-- Step 4: Results -->
+        <section id="resultsSection" style="display:none;">
+            <div class="results-header">
+                <h2 class="results-title"><span class="material-icons-round results-title-icon">auto_awesome</span>
+                    Generated groups</h2>
+                <div class="results-actions">
+                    <button id="copyBtn" class="btn btn-ghost btn-sm" aria-label="Copy groups to clipboard"><span
+                            class="material-icons-round btn-icon">content_copy</span> Copy</button>
+                    <button id="downloadBtn" class="btn btn-primary" aria-label="Download groups as PDF"><span
+                            class="material-icons-round btn-icon">picture_as_pdf</span>
+                        Download PDF</button>
+                    <button id="downloadExcelBtn" class="btn btn-success" aria-label="Download groups as Excel"><span
+                            class="material-icons-round btn-icon">table_view</span>
+                        Download Excel</button>
+                </div>
+            </div>
+            <div id="groups" class="groups-grid" role="list"></div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>GroupMaker &mdash; Random group generator</p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="./js/script.js"></script>
+</body>
+
+</html>
